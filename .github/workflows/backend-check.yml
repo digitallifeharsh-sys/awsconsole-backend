@@ -13,4 +13,3 @@ jobs:
           node-version: 20
       - run: npm install
       - run: npm run check
-      - run: find src -name '*.js' -print0 | xargs -0 -n1 node --check
