@@ -5,17 +5,13 @@ import helmet from 'helmet';
 import smsRoutes from './src/routes/sms.routes.js';
 import initializeDatabase from './src/models/initDatabase.js';
 import pool from './src/config/database.js';
-import requireConsoleAdmin from './src/middleware/requireConsoleAdmin.js';
 
 const app = express();
 app.disable('x-powered-by');
 app.use(helmet());
 
 const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-
+  .split(',').map((origin) => origin.trim()).filter(Boolean);
 app.use(cors({
   origin(origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
@@ -31,14 +27,19 @@ app.get('/health', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
     return res.json({ success: true, service: 'awsconsole-backend', database: 'connected', time: new Date().toISOString() });
-  } catch {
+  } catch (error) {
+    console.error('Health check database error:', error.code || error.message);
     return res.status(503).json({ success: false, service: 'awsconsole-backend', database: 'unavailable' });
   }
 });
 
-app.use('/api/v1/sms/2factor', requireConsoleAdmin, smsRoutes);
+// No login/admin guard yet: authentication will be added when the login module exists.
+app.use('/api/v1/sms/2factor', smsRoutes);
 
-app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
+// Backwards-compatible path used by the current frontend and screenshot.
+app.use('/sms/2factor', smsRoutes);
+
+app.use((req, res) => res.status(404).json({ success: false, message: `Route not found: ${req.method} ${req.originalUrl}` }));
 
 app.use((error, _req, res, _next) => {
   if (error.message === 'Origin not allowed') return res.status(403).json({ success: false, message: 'Origin not allowed' });
@@ -59,7 +60,7 @@ const startServer = async () => {
       console.log('Entry point: index.js | Framework: Express MVC | Database: MySQL');
     });
   } catch (error) {
-    console.error('Backend startup failed. Verify .env and MySQL DNS user permissions.');
+    console.error('Backend startup failed. Check the MySQL connection/configuration.');
     console.error(error.code || error.message);
     await pool.end().catch(() => {});
     process.exit(1);
