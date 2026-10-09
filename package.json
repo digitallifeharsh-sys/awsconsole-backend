@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "check": "node --check server.js && node --check config/db.js && node --check utils/crypto.js && node --check module/sms_module/gate.js && node --check module/sms_module/Admin/IndexRoute.js && node --check module/sms_module/Admin/router/config.Router.js && node --check module/sms_module/Admin/controller/config.controller.js && node --check module/sms_module/Admin/model/config.model.js && node --check module/sms_module/Admin/query/config.query.js && node --check module/sms_module/Admin/utils/provider.js && node --check module/sms_module/web_panel/router/index.js && node --check module/sms_module/api_user/router/index.js"
+    "check": "node --check server.js && node --check index.js && node --check config/db.js && node --check utils/crypto.js && node --check module/sms_module/gate.js && node --check module/sms_module/Admin/IndexRoute.js && node --check module/sms_module/Admin/router/config.Router.js && node --check module/sms_module/Admin/controller/config.controller.js && node --check module/sms_module/Admin/model/config.model.js && node --check module/sms_module/Admin/query/config.query.js && node --check module/sms_module/Admin/utils/provider.js && node --check module/sms_module/web_panel/router/index.js && node --check module/sms_module/api_user/router/index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
