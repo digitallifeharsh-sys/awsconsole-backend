@@ -1,36 +1,40 @@
 # AWS Console Backend
 
-Express MVC backend following the supplied `desgin_backend` folder structure and using the existing MySQL `DNS` database.
+Backend structure follows the supplied `desgin_backend` ZIP. It uses Express MVC and the existing MySQL `DNS` database.
 
 ## Run locally
 ```bash
 npm install
 cp .env.example .env
-# Set DB_PASSWORD to the same local password accepted by: mysql -u harsh -p DNS
+# Set DB_PASSWORD to the local password accepted by: mysql -u harsh -p DNS
 npm run check
 npm run dev
 ```
 
-Local MySQL defaults match the existing DNS project pattern: host `localhost`, database `DNS`, user `harsh`. The password stays in the untracked local `.env`; never commit it.
+MySQL defaults match the local DNS project style: `localhost`, database `DNS`, user `harsh`. The password is only in your untracked local `.env`; never commit it.
 
-## Structure
-- `server.js`: Express entry point and module mounts.
-- `config/db.js`: MySQL connection pool.
-- `utils/crypto.js`: AES-256-GCM secret encryption and masking.
-- `module/sms_module/gate.js`: SMS module entry router.
-- `module/sms_module/Admin/IndexRoute.js`: admin-module route composition.
-- `module/sms_module/Admin/router/config.Router.js`: REST endpoints.
-- `module/sms_module/Admin/controller/config.controller.js`: validation and responses.
-- `module/sms_module/Admin/model/config.model.js`: table initialization.
-- `module/sms_module/Admin/query/config.query.js`: SQL queries.
-- `module/sms_module/Admin/utils/provider.js`: 2Factor SMS/call integration.
-- `web_panel/`, `api_user/`, `filter/`, `config/`: reserved module sections with initial placeholders.
+## Folder structure
+- `server.js`: Express entry point and route mounting.
+- `index.js`: backward-compatible entry point that imports `server.js`.
+- `config/db.js`: MySQL pool.
+- `utils/crypto.js`: encrypts provider credentials and masks them in responses.
+- `module/sms_module/gate.js`: SMS module route gateway.
+- `module/sms_module/Admin/IndexRoute.js`: Admin module router composition.
+- `module/sms_module/Admin/router/config.Router.js`: config REST endpoints.
+- `module/sms_module/Admin/controller/config.controller.js`: request validation and response handling.
+- `module/sms_module/Admin/model/config.model.js`: initializes the MySQL table.
+- `module/sms_module/Admin/query/config.query.js`: parameterized SQL operations.
+- `module/sms_module/Admin/utils/provider.js`: 2Factor provider requests.
+- `module/sms_module/web_panel/`: separate web-panel module.
+- `module/sms_module/api_user/`: separate API-user module.
+- `module/sms_module/filter/` and `module/sms_module/config/`: shared filters and settings.
+- `module/ls/`: reserved folder from the supplied ZIP.
 
-## Endpoints
-Both prefixes work:
+## Configuration endpoints
+Both paths are supported:
 - `/sms/2factor/config`
 - `/api/v1/sms/2factor/config`
 
-GET/list, GET/:id, POST, PUT/:id, DELETE/:id, POST/:id/test-sms and POST/:id/test-call.
+Supported methods: GET list, GET by id, POST create, PUT update, DELETE, POST test-sms, POST test-call.
 
-Login is not implemented, so no login/admin middleware is applied yet. Do not expose configuration endpoints to the public internet until authentication and authorization are added. SMS/call tests may incur provider charges.
+Login is intentionally not enforced because the login module has not been implemented. Keep the service on localhost/private network until authentication is added. Provider SMS/call tests can incur charges.
