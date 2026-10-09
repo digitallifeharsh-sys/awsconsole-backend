@@ -19,7 +19,11 @@ const initializeDatabase = async () => {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
   const connection = await pool.getConnection();
-  connection.release();
+  try {
+    await connection.query('SELECT 1');
+  } finally {
+    connection.release();
+  }
   console.log('MySQL connected; 2Factor configuration table is ready');
 };
 
