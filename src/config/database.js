@@ -1,11 +1,12 @@
+import 'dotenv/config';
 import mysql from 'mysql2/promise';
 
-// Keep the same local MySQL connection style as DNS: localhost + DNS database.
-// Environment variables only override local settings when explicitly supplied.
+// Match dns_harsh's local MySQL setup: localhost + DNS database + harsh user.
+// Password is loaded from the private local .env file, never hard-coded in Git.
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'harsh',
-  password: process.env.DB_PASSWORD ?? '',
+  password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'DNS',
   port: Number(process.env.DB_PORT || 3306),
   waitForConnections: true,
