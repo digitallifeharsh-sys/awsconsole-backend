@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "check": "node --check index.js && node --check src/config/database.js && node --check src/models/initDatabase.js && node --check src/controllers/twoFactor.controller.js && node --check src/routes/sms.routes.js && node --check src/services/twoFactor.service.js && node --check src/utils/crypto.js"
+    "check": "node --check index.js && node --check src/config/database.js && node --check src/models/initDatabase.js && node --check src/controllers/twoFactor.controller.js && node --check src/routes/sms.routes.js && node --check src/services/twoFactor.service.js && node --check src/utils/crypto.js && node --check src/repositories/twoFactorConfig.repository.js && node --check src/middleware/requireConsoleAdmin.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
