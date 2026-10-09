@@ -1,35 +1,52 @@
 # AWS Console Backend
 
-Node.js + Express + MySQL API for the existing Service Console frontend.
+Standalone **Node.js + Express MVC + MySQL** backend for the React/Vite AWS Service Console. This backend does not use Next.js.
 
-## Local setup
-
-1. Create a MySQL database named `AWS_CONSOLE` (or set `DB_NAME`).
-2. Copy `.env.example` to `.env` and set database credentials.
-3. Generate a 32-byte encryption key: `openssl rand -hex 32`. Put the 64-character hex result in `CREDENTIAL_ENCRYPTION_KEY`.
-4. Install and run:
+## Start
 
 ```bash
+cp .env.example .env
+# Edit .env and set the real local MySQL password and random secrets.
 npm install
 npm run dev
+# or:
+node index.js
 ```
 
-The backend initializes the `two_factor_configs` table on startup. Check `http://localhost:5000/health`.
+Database settings match the intended local `dns_harsh` setup: database `DNS`, user `harsh`. The password is only read from the ignored local `.env` file; never commit a real password.
 
-## API
+Generate two different values using `openssl rand -hex 32`, one for `CONSOLE_ADMIN_TOKEN` and another for `CREDENTIAL_ENCRYPTION_KEY`.
 
-Base path: `/api/v1/sms/2factor`
+## MVC structure
 
-- `GET /config` — list configurations (secrets are masked)
-- `GET /config/:id` — fetch one configuration (secrets are masked)
-- `POST /config` — create a configuration
-- `PUT /config/:id` — update configuration
-- `DELETE /config/:id` — delete configuration
-- `POST /config/:id/test-sms` — send a real SMS OTP
-- `POST /config/:id/test-call` — place a real voice call
+- `index.js`: Express bootstrap, middleware, routes and startup
+- `src/routes/`: API routes
+- `src/controllers/`: request and response handling
+- `src/repositories/`: parameterized MySQL operations
+- `src/models/`: schema initialization
+- `src/services/`: 2Factor provider integration
+- `src/middleware/`: admin access control
+- `src/config/database.js`: MySQL pool
+- `src/utils/crypto.js`: AES-256-GCM encryption
 
-All configuration and test endpoints require `X-Console-Admin-Key`, checked against `CONSOLE_ADMIN_TOKEN` using a timing-safe comparison. Secrets are encrypted with AES-256-GCM before MySQL storage. The frontend must never receive plaintext credentials. Configure `FRONTEND_URL` to the exact browser origin if using direct cross-origin API requests; during local Vite development, the frontend proxy is preferred.
+## Health
 
-## Provider notes
+`GET http://localhost:5000/health` checks the database and responds with HTTP 503 if it is unavailable.
 
-SMS testing uses the documented 2Factor OTP endpoint `POST /API/V1/OTP/SEND` with `X-API-Key` and the configured SMS template name. Voice testing uses the 2Factor OBD voice endpoint. A valid provider account, template approval, and available credits are required; live SMS/call delivery cannot be confirmed without real credentials and a reachable provider.
+## 2Factor routes
+
+Base path: `/api/v1/sms/2factor`. All routes require `X-Console-Admin-Key` equal to `CONSOLE_ADMIN_TOKEN`.
+
+- `GET /config`
+- `GET /config/:id`
+- `POST /config`
+- `PUT /config/:id`
+- `DELETE /config/:id`
+- `POST /config/:id/test-sms`
+- `POST /config/:id/test-call`
+
+Provider credentials are encrypted in MySQL and masked in responses. SMS/call tests contact the real provider and may incur charges.
+
+## Database
+
+Startup creates `two_factor_configs` if it does not exist in `DNS`. The MySQL user must have create-table permission. `CREATE TABLE IF NOT EXISTS` does not migrate an existing table with an older schema.
