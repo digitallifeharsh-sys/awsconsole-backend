@@ -28,7 +28,7 @@ Base path: `/api/v1/sms/2factor`
 - `POST /config/:id/test-sms` — send a real SMS OTP
 - `POST /config/:id/test-call` — place a real voice call
 
-Secrets are encrypted with AES-256-GCM before MySQL storage. The frontend must never receive plaintext credentials. Configure `FRONTEND_URL` to the exact browser origin if using direct cross-origin API requests; during local Vite development, the frontend proxy is preferred.
+All configuration and test endpoints require `X-Console-Admin-Key`, checked against `CONSOLE_ADMIN_TOKEN` using a timing-safe comparison. Secrets are encrypted with AES-256-GCM before MySQL storage. The frontend must never receive plaintext credentials. Configure `FRONTEND_URL` to the exact browser origin if using direct cross-origin API requests; during local Vite development, the frontend proxy is preferred.
 
 ## Provider notes
 
