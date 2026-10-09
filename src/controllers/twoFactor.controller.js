@@ -1,11 +1,104 @@
 import * as repo from '../repositories/twoFactorConfig.repository.js';
-import {encryptSecret,maskedSecret} from '../utils/crypto.js';
-import {sendSms,makeCall} from '../services/twoFactor.service.js';
-const view=r=>r?({id:r.id,nickname:r.nickname,apiKey:maskedSecret(r.api_key_encrypted),smsToken:maskedSecret(r.sms_token_encrypted),callToken:maskedSecret(r.call_token_encrypted),smsTemplateId:r.sms_template_id,callTemplateId:r.call_template_id,provider:r.provider,isActive:Boolean(r.is_active),createdAt:r.created_at,updatedAt:r.updated_at}):null;
-export const list=async(_q,res)=>res.json({success:true,data:(await repo.findAll()).map(view)});
-export const get=async(req,res)=>{const r=await repo.findById(req.params.id);if(!r)return res.status(404).json({success:false,message:'Configuration not found'});res.json({success:true,data:view(r)});};
-export const create=async(req,res)=>{const b=req.body;if(!b.nickname||!b.apiKey)return res.status(400).json({success:false,message:'nickname and apiKey are required'});const r=await repo.create({nickname:b.nickname,apiKeyEncrypted:encryptSecret(b.apiKey),smsTokenEncrypted:encryptSecret(b.smsToken),callTokenEncrypted:encryptSecret(b.callToken),smsTemplateId:b.smsTemplateId,callTemplateId:b.callTemplateId,provider:b.provider,isActive:b.isActive});res.status(201).json({success:true,data:view(r)});};
-export const update=async(req,res)=>{if(!await repo.findById(req.params.id))return res.status(404).json({success:false,message:'Configuration not found'});const b=req.body,d={nickname:b.nickname,smsTemplateId:b.smsTemplateId,callTemplateId:b.callTemplateId,provider:b.provider,isActive:b.isActive};if(b.apiKey!==undefined)d.apiKeyEncrypted=encryptSecret(b.apiKey);if(b.smsToken!==undefined)d.smsTokenEncrypted=encryptSecret(b.smsToken);if(b.callToken!==undefined)d.callTokenEncrypted=encryptSecret(b.callToken);res.json({success:true,data:view(await repo.update(req.params.id,d))});};
-export const remove=async(req,res)=>{if(!await repo.findById(req.params.id))return res.status(404).json({success:false,message:'Configuration not found'});await repo.remove(req.params.id);res.json({success:true,message:'Configuration deleted'});};
-export const testSms=async(req,res)=>{const config=await repo.findById(req.params.id);if(!config)return res.status(404).json({success:false,message:'Configuration not found'});if(!config.is_active)return res.status(409).json({success:false,message:'This configuration is disabled'});const data=await sendSms({config,...req.body});return res.json({success:true,data});};
-export const testCall=async(req,res)=>{const config=await repo.findById(req.params.id);if(!config)return res.status(404).json({success:false,message:'Configuration not found'});if(!config.is_active)return res.status(409).json({success:false,message:'This configuration is disabled'});const data=await makeCall({config,...req.body});return res.json({success:true,data});};
+import { encryptSecret, maskedSecret } from '../utils/crypto.js';
+import { sendSms, makeCall } from '../services/twoFactor.service.js';
+
+const view = (row) => row ? ({
+  id: row.id,
+  nickname: row.nickname,
+  apiKey: maskedSecret(row.api_key_encrypted),
+  smsToken: maskedSecret(row.sms_token_encrypted),
+  callToken: maskedSecret(row.call_token_encrypted),
+  smsTemplateId: row.sms_template_id,
+  callTemplateId: row.call_template_id,
+  provider: row.provider,
+  isActive: Boolean(row.is_active),
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+}) : null;
+
+const cleanOptional = (value) => value === undefined || value === null || String(value).trim() === ''
+  ? null
+  : String(value).trim();
+
+export const list = async (_req, res) => {
+  res.json({ success: true, data: (await repo.findAll()).map(view) });
+};
+
+export const get = async (req, res) => {
+  const row = await repo.findById(req.params.id);
+  if (!row) return res.status(404).json({ success: false, message: 'Configuration not found' });
+  return res.json({ success: true, data: view(row) });
+};
+
+export const create = async (req, res) => {
+  const body = req.body || {};
+  const nickname = String(body.nickname || '').trim();
+  const apiKey = String(body.apiKey || '').trim();
+  if (!nickname) return res.status(400).json({ success: false, message: 'Nickname is required' });
+  if (!apiKey) return res.status(400).json({ success: false, message: '2Factor API key is required' });
+
+  const row = await repo.create({
+    nickname,
+    apiKeyEncrypted: encryptSecret(apiKey),
+    smsTokenEncrypted: encryptSecret(cleanOptional(body.smsToken)),
+    callTokenEncrypted: encryptSecret(cleanOptional(body.callToken)),
+    smsTemplateId: cleanOptional(body.smsTemplateId),
+    callTemplateId: cleanOptional(body.callTemplateId),
+    provider: cleanOptional(body.provider) || '2factor',
+    isActive: body.isActive === undefined ? true : Boolean(body.isActive),
+  });
+  return res.status(201).json({ success: true, message: 'Configuration saved', data: view(row) });
+};
+
+export const update = async (req, res) => {
+  const existing = await repo.findById(req.params.id);
+  if (!existing) return res.status(404).json({ success: false, message: 'Configuration not found' });
+
+  const body = req.body || {};
+  const data = {};
+  if (body.nickname !== undefined) {
+    const nickname = String(body.nickname).trim();
+    if (!nickname) return res.status(400).json({ success: false, message: 'Nickname is required' });
+    data.nickname = nickname;
+  }
+  for (const key of ['smsTemplateId', 'callTemplateId', 'provider']) {
+    if (body[key] !== undefined) data[key] = cleanOptional(body[key]) || (key === 'provider' ? '2factor' : null);
+  }
+  if (body.isActive !== undefined) data.isActive = Boolean(body.isActive);
+
+  for (const [bodyKey, field] of [
+    ['apiKey', 'apiKeyEncrypted'],
+    ['smsToken', 'smsTokenEncrypted'],
+    ['callToken', 'callTokenEncrypted'],
+  ]) {
+    if (body[bodyKey] !== undefined && String(body[bodyKey]).trim() !== '') {
+      data[field] = encryptSecret(String(body[bodyKey]).trim());
+    }
+  }
+
+  const row = await repo.update(req.params.id, data);
+  return res.json({ success: true, message: 'Configuration updated', data: view(row) });
+};
+
+export const remove = async (req, res) => {
+  const existing = await repo.findById(req.params.id);
+  if (!existing) return res.status(404).json({ success: false, message: 'Configuration not found' });
+  await repo.remove(req.params.id);
+  return res.json({ success: true, message: 'Configuration deleted' });
+};
+
+export const testSms = async (req, res) => {
+  const config = await repo.findById(req.params.id);
+  if (!config) return res.status(404).json({ success: false, message: 'Configuration not found' });
+  if (!config.is_active) return res.status(409).json({ success: false, message: 'This configuration is disabled' });
+  const data = await sendSms({ config, ...(req.body || {}) });
+  return res.json({ success: true, data });
+};
+
+export const testCall = async (req, res) => {
+  const config = await repo.findById(req.params.id);
+  if (!config) return res.status(404).json({ success: false, message: 'Configuration not found' });
+  if (!config.is_active) return res.status(409).json({ success: false, message: 'This configuration is disabled' });
+  const data = await makeCall({ config, ...(req.body || {}) });
+  return res.json({ success: true, data });
+};
