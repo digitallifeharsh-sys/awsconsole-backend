@@ -1,52 +1,25 @@
 # AWS Console Backend
 
-Standalone **Node.js + Express MVC + MySQL** backend for the React/Vite AWS Service Console. This backend does not use Next.js.
+Node.js + Express MVC backend for the Service Console, backed by the existing MySQL `DNS` database.
 
-## Start
-
+## Run locally
 ```bash
-cp .env.example .env
-# Edit .env and set the real local MySQL password and random secrets.
 npm install
+cp .env.example .env
+# Set DB_PASSWORD to the same password that works with: mysql -u harsh -p DNS
 npm run dev
-# or:
-node index.js
 ```
 
-Database settings match the intended local `dns_harsh` setup: database `DNS`, user `harsh`. The password is only read from the ignored local `.env` file; never commit a real password.
-
-Generate two different values using `openssl rand -hex 32`, one for `CONSOLE_ADMIN_TOKEN` and another for `CREDENTIAL_ENCRYPTION_KEY`.
-
-## MVC structure
-
-- `index.js`: Express bootstrap, middleware, routes and startup
-- `src/routes/`: API routes
-- `src/controllers/`: request and response handling
-- `src/repositories/`: parameterized MySQL operations
-- `src/models/`: schema initialization
-- `src/services/`: 2Factor provider integration
-- `src/middleware/`: admin access control
-- `src/config/database.js`: MySQL pool
-- `src/utils/crypto.js`: AES-256-GCM encryption
+The default local DB connection follows the existing DNS project pattern: MySQL on `localhost`, database `DNS`, user `harsh`. Environment variables override these defaults when needed. Never commit `.env`.
 
 ## Health
+`GET /health`
 
-`GET http://localhost:5000/health` checks the database and responds with HTTP 503 if it is unavailable.
+## 2Factor configuration endpoints
+Both prefixes are supported for frontend compatibility:
+- `/sms/2factor/config`
+- `/api/v1/sms/2factor/config`
 
-## 2Factor routes
+Routes: GET/list, GET/:id, POST, PUT/:id, DELETE/:id, POST/:id/test-sms, POST/:id/test-call. No login guard is active yet because the console login module has not been implemented. Add authentication before deploying this configuration API to a public internet-facing environment.
 
-Base path: `/api/v1/sms/2factor`. All routes require `X-Console-Admin-Key` equal to `CONSOLE_ADMIN_TOKEN`.
-
-- `GET /config`
-- `GET /config/:id`
-- `POST /config`
-- `PUT /config/:id`
-- `DELETE /config/:id`
-- `POST /config/:id/test-sms`
-- `POST /config/:id/test-call`
-
-Provider credentials are encrypted in MySQL and masked in responses. SMS/call tests contact the real provider and may incur charges.
-
-## Database
-
-Startup creates `two_factor_configs` if it does not exist in `DNS`. The MySQL user must have create-table permission. `CREATE TABLE IF NOT EXISTS` does not migrate an existing table with an older schema.
+2Factor API/token secrets are encrypted at rest and masked in response payloads. Real SMS/call tests may incur provider charges.
