@@ -35,7 +35,9 @@ app.get('/health', async (_req, res) => {
 });
 
 // Login is intentionally deferred. Protect public configuration endpoints before production deployment.
+// Keep the versioned API as canonical; the alias supports older frontend env configs.
 app.use('/api/v1/user-setup', userSetupRoutes);
+app.use('/user-setup', userSetupRoutes);
 app.use('/sms/2factor', smsGate);
 app.use('/api/v1/sms/2factor', smsGate);
 app.use('/sms/web-panel', webPanelRoutes);
