@@ -21,8 +21,8 @@ export const createSetup = async (req, res) => {
 
   if (!fullName || fullName.length > 160) return res.status(400).json({ success: false, message: 'Enter a valid full name (maximum 160 characters).' });
   if (!['male', 'female', 'other', 'prefer_not_to_say'].includes(gender)) return res.status(400).json({ success: false, message: 'Select a valid gender option.' });
-  if (!/^\\+?[0-9 ()-]{7,32}$/.test(phone)) return res.status(400).json({ success: false, message: 'Enter a valid phone number.' });
-  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length > 254) return res.status(400).json({ success: false, message: 'Enter a valid email address.' });
+  if (!/^\+?[0-9 ()-]{7,32}$/.test(phone)) return res.status(400).json({ success: false, message: 'Enter a valid phone number.' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) return res.status(400).json({ success: false, message: 'Enter a valid email address.' });
   if (!nickname || nickname.length > 120) return res.status(400).json({ success: false, message: 'Nickname is required (maximum 120 characters).' });
   if (!apiKey || apiKey.length > 2048) return res.status(400).json({ success: false, message: '2Factor API key is required and must be at most 2048 characters.' });
   if (tooLong(smsToken, 2048) || tooLong(callToken, 2048)) return res.status(400).json({ success: false, message: 'SMS and Call tokens must be at most 2048 characters.' });
